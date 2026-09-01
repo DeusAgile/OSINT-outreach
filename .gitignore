@@ -1,0 +1,8 @@
+config/config.json
+cache/
+reports/
+*.raw
+run-state.json
+summary.xlsx
+__pycache__/
+*.pyc

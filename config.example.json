@@ -1,0 +1,25 @@
+{
+  "hh": {
+    "api_token": "",
+    "prefer_api": true
+  },
+  "http": {
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "timeout_sec": 25,
+    "retries": 3,
+    "per_domain_delay_sec": 2
+  },
+  "search": {
+    "provider": "builtin",
+    "region_id": 225,
+    "results": 20
+  },
+  "report": {
+    "insights_period_months": 12,
+    "max_persons": 5
+  },
+  "paths": {
+    "cache": "cache",
+    "output": "reports"
+  }
+}

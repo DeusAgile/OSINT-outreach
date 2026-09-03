@@ -39,24 +39,40 @@ _Инсайты за период не найдены в открытых ист
 
 ## 3. ФИО и контактные данные ЛПР/ЛВР
 
-{{#each persons}}
+{{#if hr_contact}}
+### HR-контакт: {{hr_contact.name_normalized}} — {{hr_contact.position}}
+
+- Confidence: **{{hr_contact.confidence_suggested}}**
+- Привязка к компании: {{hr_contact.company_link.type}} ([источник]({{hr_contact.company_link.evidence_url}}))
+{{else}}
+_HR-контакт (HRD/директор по персоналу/HRBP/Head of Recruitment) не найден в открытых источниках._
+{{/if}}
+
+{{#if other_lpr}}
+**Другие ЛПР компании** (не HR-роль, но точки входа для персонализации):
+
+{{#each other_lpr}}
 ### {{this.name_normalized}} {{#if this.position}}— {{this.position}}{{/if}}
 
 - Confidence: **{{this.confidence_suggested}}**
 - Привязка к компании: {{this.company_link.type}} ([источник]({{this.company_link.evidence_url}}))
-- Другие варианты написания имени: {{this.name_variants}}
-{{else}}
-_ЛПР не найден в открытых источниках._
 {{/each}}
+{{/if}}
+
+{{#unless hr_contact}}{{#unless other_lpr}}
+_ЛПР не найдены в открытых источниках._
+{{/unless}}{{/unless}}
 
 ## 4. Публичные страницы контактных лиц
 
+{{! persons здесь = HR-контакт (если есть) + other_lpr вместе, каждый кто попал в блок 3 }}
 {{#each persons}}
 **{{this.name_normalized}}:**
+- Канал связи: {{#if this.contact_channel}}{{this.contact_channel.type}} — {{this.contact_channel.value}}{{else}}не найден — публичные профили ниже не заменяют канал доставки{{/if}}
 {{#each this.public_profiles}}
 - [{{this.label}}]({{this.url}})
 {{else}}
-- не найдено
+- публичных профилей не найдено
 {{/each}}
 {{/each}}
 

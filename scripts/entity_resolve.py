@@ -117,16 +117,41 @@ def company_link_evidence(candidate: dict[str, Any], company: str, company_domai
     return None
 
 
-def score_and_confidence(sources: list[str], link_type: Optional[str]) -> tuple[float, str]:
+def score_and_confidence(sources: list[str], link_type: Optional[str], evidence_urls: Optional[list[str]] = None) -> tuple[float, str]:
     """Скоринг совпадения и предварительный confidence по правилам из
     config/confidence-levels.md:
     - TENTATIVE: один источник, независимо не подтверждён
     - FIRM: один источник, но первичный/официальный (сайт компании, hh.ru)
     - CONFIRMED: подтверждено ≥2 независимыми источниками
-    """
+
+    НАЙДЕННЫЙ БАГ (реальный кейс RED SOFT): «независимость» раньше считалась
+    по имени СКРИПТА (`sources`), а не по тому, откуда данные взялись на
+    самом деле. `media_search.py`/`web_search` — это не источник данных, а
+    поисковый слой поверх множества сайтов; когда он находит одного и того
+    же человека на list-org.com И на audit-it.ru (два независимых
+    реестровых сайта), обе находки помечались `source: "media_search"` —
+    `set(sources)` схлопывался в один элемент, и подтверждённый двумя
+    независимыми реестрами гендиректор получал TENTATIVE вместо CONFIRMED.
+    Теперь независимость считается по количеству УНИКАЛЬНЫХ ДОМЕНОВ в
+    `evidence_urls`, если они переданы — а не только по именам скриптов.
+    Домены между собой считаются независимыми источниками, даже если оба
+    найдены через один и тот же поисковый скрипт."""
     primary_sources = {"site_crawler", "hh_client"}
     unique_sources = set(sources)
-    if len(unique_sources) >= 2:
+
+    unique_domains: set[str] = set()
+    if evidence_urls:
+        from urllib.parse import urlparse
+
+        for u in evidence_urls:
+            if u:
+                netloc = urlparse(u).netloc.lower().replace("www.", "")
+                if netloc:
+                    unique_domains.add(netloc)
+
+    independence_count = max(len(unique_sources), len(unique_domains))
+
+    if independence_count >= 2:
         confidence = "CONFIRMED"
         score = 0.9
     elif unique_sources & primary_sources:
@@ -199,7 +224,9 @@ def resolve(candidates: list[dict[str, Any]], company: str, company_domain: Opti
 
     persons = []
     for group in groups:
-        score, confidence = score_and_confidence(group["sources"], (group["company_link"] or {}).get("type"))
+        score, confidence = score_and_confidence(
+            group["sources"], (group["company_link"] or {}).get("type"), group["evidence_urls"]
+        )
         persons.append(
             {
                 "name_normalized": group["name_normalized"],

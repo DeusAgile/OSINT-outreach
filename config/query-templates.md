@@ -8,6 +8,29 @@
 
 Расширяется правкой этого файла, без изменения `media_search.py`.
 
+**Набор `company_leadership`:**
+```
+{company} руководство команда
+{company} основатель CEO
+site:setka.ru {company}
+{company} сетка hh.ru
+site:career.habr.com {company} сотрудники
+{company} топ-менеджмент
+```
+
+**Набор `hr_process`:**
+```
+site:dreamjob.ru {company}
+{company} отзывы сотрудников собеседование
+{company} как проходит собеседование
+{company} этапы отбора кандидатов
+site:habr.com {company} как мы нанимаем
+site:vk.com {company} вакансии команда
+site:comnews.ru {company} кадры персонал
+site:amlive.ru {company}
+site:tenchat.ru {company} найм HR
+```
+
 **Набор `lpr_search`:**
 ```
 "HRD" {company}
@@ -30,7 +53,8 @@ site:tenchat.ru {company} HR
 "{person}" HR
 "{person}" интервью
 "{person}" site:t.me
-"{person}" site:vc.ru OR site:rb.ru OR site:cnews.ru
+"{person}" site:setka.ru
+"{person}" site:vc.ru OR site:rb.ru OR site:cnews.ru OR site:comnews.ru
 "{person}" конференция доклад
 ```
 

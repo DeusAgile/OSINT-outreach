@@ -52,7 +52,15 @@ SEARCH_RELIABILITY_WARNING = (
 # Скоринг по домену: официальный сайт компании и hh.ru доверенные, крупные
 # отраслевые СМИ — средне, агрегаторы и незнакомые домены — ниже.
 HIGH_TRUST_DOMAINS = {"hh.ru", "career.habr.com", "habr.com"}
-MEDIUM_TRUST_DOMAINS = {"vc.ru", "rb.ru", "cnews.ru", "forbes.ru", "tenchat.ru", "t.me"}
+MEDIUM_TRUST_DOMAINS = {
+    "vc.ru", "rb.ru", "cnews.ru", "forbes.ru", "tenchat.ru", "t.me",
+    "comnews.ru", "amlive.ru", "setka.ru", "dreamjob.ru",
+}
+# dreamjob.ru — не в HIGH_TRUST специально: сама структура страницы
+# работодателя надёжна (как источник ДЛЯ поиска нужной компании), но
+# содержание — субъективные отзывы, не факты; высокий скоринг здесь не
+# должен читаться как «содержимому можно доверять как hh.ru» — см.
+# dreamjob_client.py.
 
 
 def load_query_sets() -> dict[str, list[str]]:

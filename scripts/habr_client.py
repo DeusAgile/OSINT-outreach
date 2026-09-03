@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 from typing import Any
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
@@ -39,7 +40,21 @@ def fetch_company(session: Session, cache: Cache, company_url: str) -> tuple[dic
     soup = BeautifulSoup(resp.text, "lxml")
     warnings: list[str] = []
 
-    name_el = soup.select_one("h1") or soup.select_one('[class*="company_name"]')
+    # Чистое название компании — ссылка на саму страницу компании в
+    # хедере, БЕЗ класса (у неё нет своего data-qa/class, но это первая
+    # такая ссылка на странице). h1 — это заголовок блока "О компании X",
+    # а не имя компании (даёт "О компании «РЕД СОФТ»" вместо "РЕД СОФТ" —
+    # проверено на реальной странице, найдено при разборе кейса RED SOFT).
+    name_el = None
+    company_path = urlparse(company_url).path
+    for a in soup.find_all("a", href=company_path):
+        text = a.get_text(" ", strip=True)
+        if text:
+            name_el = a
+            break
+    if name_el is None:
+        name_el = soup.select_one("h1")
+
     description_el = soup.select_one('[class*="company_description"]') or soup.select_one("meta[name='description']")
     description = None
     if description_el is not None:
@@ -47,13 +62,36 @@ def fetch_company(session: Session, cache: Cache, company_url: str) -> tuple[dic
     if not description:
         warnings.append("description: не найдено")
 
+    # Контакты — телефон/email/VK в сайдбаре ([data-qa] на этой странице
+    # нет вообще, вёрстка на классах .contacts/.contact/.type/.value).
+    # НАЙДЕНО НА РЕАЛЬНОМ КЕЙСЕ (RED SOFT): раньше этого блока не было
+    # вообще — телефон и email HR-руководителя лежали открытым текстом в
+    # HTML, который скрипт и так получал, просто их никто не искал.
+    contacts: dict[str, str] = {}
+    for c in soup.select(".contacts .contact"):
+        type_el = c.select_one(".type")
+        value_el = c.select_one(".value")
+        if type_el and value_el:
+            key = type_el.get_text(" ", strip=True).rstrip(":").strip().lower()
+            contacts[key] = value_el.get_text(" ", strip=True)
+    if not contacts:
+        warnings.append("contacts: раздел «Контакты» не найден — телефон/email компании, если публикуются, здесь")
+
+    # сайт компании — первая внешняя ссылка в сайдбаре (не ведущая на сам habr.com)
+    site = None
+    sidebar = soup.select_one("aside")
+    if sidebar:
+        ext_link = sidebar.select_one('a[href^="http"]:not([href*="habr.com"])')
+        if ext_link:
+            site = ext_link.get_text(" ", strip=True)
+
     vacancies = []
     for v in soup.select('a[href*="/vacancies/"]')[:30]:
         title = v.get_text(" ", strip=True)
         if title:
             vacancies.append({"title": title, "url": CAREER_BASE + v["href"] if v["href"].startswith("/") else v["href"]})
     if not vacancies:
-        warnings.append("vacancies: не найдены (возможно, нет открытых или изменилась вёрстка)")
+        warnings.append("vacancies: не найдены (возможно, нет открытых — не всегда признак сбоя, см. страницу вручную)")
 
     employees = []
     for e in soup.select('a[href^="/"][href*="/"]'):
@@ -68,6 +106,8 @@ def fetch_company(session: Session, cache: Cache, company_url: str) -> tuple[dic
         "name": name_el.get_text(" ", strip=True) if name_el else None,
         "description": description,
         "url": company_url,
+        "site": site,
+        "contacts": contacts,
     }
     if profile["name"] is None:
         warnings.append("company name: не найдено")
